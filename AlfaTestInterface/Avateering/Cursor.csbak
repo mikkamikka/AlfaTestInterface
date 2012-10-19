@@ -1,0 +1,194 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System;
+using Microsoft.Kinect;
+using Microsoft.Samples.Kinect.Avateering.Filters;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+
+namespace Microsoft.Samples.Kinect.Avateering
+{
+    class Cursor : DrawableGameComponent
+    {
+        private BasicEffect effect;
+
+        private Matrix[] worldTransforms;
+
+        private Model cursor;
+
+        public Cursor(Game game, Vector3 position)  : base(game)
+        {
+            if (null == game)
+            {
+                return;
+            }
+            
+      
+
+
+        }
+
+        public KinectChooser Chooser
+        {
+            get
+            {
+                return (KinectChooser)Game.Services.GetService(typeof(KinectChooser));
+            }
+        }
+
+
+
+
+        public override void Update(GameTime gameTime)
+        {
+            // If the sensor is not found, not running, or not connected, return now
+            if (null == this.Chooser || null == this.Chooser.Sensor || false == this.Chooser.Sensor.IsRunning || this.Chooser.Sensor.Status != KinectStatus.Connected)
+            {
+                return;
+            }
+
+            // If we have already drawn this skeleton, then we should retrieve a new frame
+            // This prevents us from calling the next frame more than once per update
+            if (false == this.SkeletonDrawn && null != this.skeleton && this.useKinectAvateering && SkeletonVisible)
+            {
+                // Copy all bind pose matrices to boneTransforms 
+                // Note: most are identity, but the translation is important to describe bone length/the offset between bone drawing positions
+                
+                this.UpdateWorldTransforms(Matrix.Identity);
+                this.UpdateSkinTransforms();
+
+                // If required, we should modify the joint positions before we access the bone orientations, as orientations are calculated
+                // on the first access, and then whenever a joint position changes. Hence changing joint positions interleaved with accessing
+                // rotations will cause unnecessary additional computation.
+                float currentNuiTime = (float)this.frameTimer.AbsoluteTime;
+                float deltaNuiTime = currentNuiTime - this.lastNuiTime;
+
+                // Fixup Skeleton to improve avatar appearance.
+                if (this.filterClippedLegs && !this.Chooser.SeatedMode && null != this.clippedLegs)
+                {
+                    this.clippedLegs.FilterSkeleton(this.skeleton, deltaNuiTime);
+                }
+
+                if (this.selfIntersectionConstraints)
+                {
+                    // Constrain the wrist and hand joint positions to not intersect the torso
+                    SkeletonJointsSelfIntersectionConstraint.Constrain(this.skeleton);
+                }
+
+                if (this.tiltCompensate)
+                {
+                    // Correct for sensor tilt if we have a valid floor plane or a sensor tilt value from the motor.
+                    SkeletonJointsSensorTiltCorrection.CorrectSensorTilt(this.skeleton, this.FloorClipPlane, this.Chooser.Sensor.ElevationAngle);
+                }
+
+                if (this.floorOffsetCompensate && 0.0f != this.AvatarHipCenterHeight)
+                {
+                    // Correct for the sensor height from the floor (moves the skeleton to the floor plane) if we have a valid plane, or feet visible in the image.
+                    // Note that by default this will not run unless we have set a non-zero AvatarHipCenterHeight
+                    this.sensorOffsetCorrection.CorrectSkeletonOffsetFromFloor(this.skeleton, this.FloorClipPlane, this.AvatarHipCenterHeight);
+                }
+
+                if (this.mirrorView)
+                {
+                    SkeletonJointsMirror.MirrorSkeleton(this.skeleton);
+                }
+
+                // Filter the joint positions manually, using a double exponential filter.
+                this.jointPositionFilter.UpdateFilter(this.skeleton);
+
+                if (this.boneConstraints && null != this.boneOrientationConstraints)
+                {
+                    // Constrain the joint positions to approximate range of human motion.
+                    this.boneOrientationConstraints.Constrain(this.skeleton, this.mirrorView);
+                }
+
+                if (this.filterBoneOrientations && null != this.boneOrientationFilter)
+                {
+                    // Double Exponential Filtering of the joint orientations.
+                    // Note: This updates the joint orientations directly in the skeleton.
+                    // It should be performed after all joint position modifications.
+                    this.boneOrientationFilter.UpdateFilter(this.skeleton);
+                }
+
+                if (null != this.retargetMethod)
+                {
+                    // Adapt the rotation matrices to the avatar mesh joint local coordinate systems
+                    this.retargetMethod(this.skeleton, this.skinningDataValue.BindPose[0], this.boneTransforms);
+                }
+
+                // Calculate the Avatar world transforms from the relative bone transforms of Kinect skeleton
+                this.UpdateWorldTransforms(Matrix.Identity);
+
+                // Refresh the Avatar SkinTransforms data based on the transforms we just applied
+                this.UpdateSkinTransforms();
+
+                this.lastNuiTime = currentNuiTime;
+            }
+
+            this.HandleInput();
+
+            base.Update(gameTime);
+
+
+        }
+
+        public void Draw(GameTime gameTime, Matrix world, Matrix view, Matrix projection)
+        {
+
+            // Render the 3D model skinned mesh with Skinned Effect.
+            foreach (ModelMesh mesh in this.cursor.Meshes)
+            {
+                foreach (SkinnedEffect effect in mesh.Effects)
+                {
+
+
+                    effect.World = world;
+                    effect.View = view;
+                    effect.Projection = projection;
+
+                    effect.EnableDefaultLighting();
+
+                    effect.SpecularColor = new Vector3(0.25f);
+                    effect.SpecularPower = 16;
+                }
+
+                mesh.Draw();
+            }
+        }
+
+       
+        /// This method loads the basic effect used for drawing.
+        
+        protected override void LoadContent()
+        {
+            effect = new BasicEffect(Game.GraphicsDevice);
+            if (null == effect)
+            {
+                throw new InvalidOperationException("Error creating Basic Effect shader.");
+            }
+
+            effect.VertexColorEnabled = true;
+
+            base.LoadContent();
+        }
+
+        private void UpdateWorldTransforms(Matrix rootTransform)
+        {
+            // Root bone of model.
+            this.worldTransforms[0] = this.boneTransforms[0] * rootTransform;
+
+            // Child bones in bone hierarchy.
+            for (int bone = 1; bone < this.worldTransforms.Length; bone++)
+            {
+                int parentBone = this.skinningDataValue.SkeletonHierarchy[bone];
+
+                // Every bone world transform is calculated by multiplying it's relative transform by the world transform of it's parent. 
+                this.worldTransforms[bone] = this.boneTransforms[bone] * this.worldTransforms[parentBone];
+            }
+        }
+
+    }
+}
