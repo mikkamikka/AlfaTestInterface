@@ -52,6 +52,18 @@ namespace Microsoft.Samples.Kinect.Avateering
           }
 
 
+        public void DrawBoundingBox()
+        {
+            drawBoundingBoxesOn = AvateeringXNA.drawBoundingBoxesOn;
+
+            if (drawBoundingBoxesOn)
+            {
+                debugDraw.Begin(AvateeringXNA.view, AvateeringXNA.projection);
+                debugDraw.DrawWireBox(BoundingBox, Color.Yellow);
+                debugDraw.End();
+            }
+
+        }
 
 
     }

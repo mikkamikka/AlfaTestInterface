@@ -15,7 +15,7 @@ namespace Microsoft.Samples.Kinect.Avateering
         private string videoclipName { get; set; }
         Matrix view;
         Matrix projection;
-        private VideoElement vid_sample;
+        private VideoWindow vid_sample;
         public float time;
 
         
@@ -25,6 +25,7 @@ namespace Microsoft.Samples.Kinect.Avateering
             game.Components.Add(this);
             videoclipName = _videoclipName;
             bb_size = new Vector3(4f, 3f, 1f);
+            
         }
         protected override void LoadContent()
         {
@@ -33,7 +34,7 @@ namespace Microsoft.Samples.Kinect.Avateering
 
             //=============video
 
-            vid_sample = new VideoElement(Game);
+            vid_sample = new VideoWindow(Game);
             vid_sample.LoadContent(Game.Content, "plane2", videoclipName);
 
             //============video endof

@@ -4,20 +4,6 @@
 // </copyright>
 //------------------------------------------------------------------------------
 
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-
-using Microsoft.Samples.Kinect.Avateering.BoundingBoxes;
-using Microsoft.Samples.Kinect.Avateering.Filters;
-using Microsoft.Xna.Framework.Media;
-using Microsoft.Xna.Framework.Content;
-using Nuclex.Testing.Xna;
-using VideoQuad;
-using MediaState = Microsoft.Xna.Framework.Media.MediaState;
-
 
 namespace Microsoft.Samples.Kinect.Avateering
 {
@@ -26,15 +12,15 @@ namespace Microsoft.Samples.Kinect.Avateering
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Kinect;
-    using Microsoft.Xna.Framework;
-    using Microsoft.Xna.Framework.Audio;
-    using Microsoft.Xna.Framework.Content;
-    using Microsoft.Xna.Framework.GamerServices;
-    using Microsoft.Xna.Framework.Graphics;
-    using Microsoft.Xna.Framework.Input;
-    using Microsoft.Xna.Framework.Net;
-    using Microsoft.Xna.Framework.Storage;
-    
+    using Xna.Framework;
+    using Xna.Framework.Audio;
+    using Xna.Framework.Content;
+    using Xna.Framework.GamerServices;
+    using Xna.Framework.Graphics;
+    using Xna.Framework.Input;
+    using Xna.Framework.Net;
+    using Xna.Framework.Storage;
+ 
     /// Sample game showing how to display skinned character and avateer with Kinect for Windows.
     
     public class AvateeringXNA : Game
@@ -186,6 +172,8 @@ namespace Microsoft.Samples.Kinect.Avateering
 
         private Vector3 previousCursorPosition;
         private Vector3 previousLeftCursorPosition;
+        public static Vector3 CursorRightDelta;
+
         public static Vector3 cursorVectorDirection;
         public static Vector3 leftCursorVectorDirection;
 
@@ -209,12 +197,16 @@ namespace Microsoft.Samples.Kinect.Avateering
         public const float BackPositionZ = -5f;
         public static bool TextInputEnabled;
 
-
-
+        
         public static List<Environment> AllEnvironmentItems = new List<Environment>();
         public static List<IconBox> AllIconBoxes = new List<IconBox>();
         public static List<WindowMedia> AllMediaWindows = new List<WindowMedia>();
 
+        public static List<Task> AllTasks = new List<Task>();
+
+        public static MainOperatorPanel BossPanel;
+
+        public Task[] CurrentTask = new Task[20];
 
 
 
@@ -296,18 +288,29 @@ namespace Microsoft.Samples.Kinect.Avateering
 
             CursorLeft = new Cursor(this, "cursor_ball");
 
-            Video_box2 = new IconBoxVideo(this, "wildlife1");
 
-            iconboxAudio1 = new IconBoxAudio(this, "Kalimba");
+          //  Video_box2 = new IconBoxVideo(this, "wildlife1");
+
+          //  iconboxAudio1 = new IconBoxAudio(this, "Kalimba");
             
-            iconboxPicture1 = new IconBoxPicture(this, "Lighthouse");
+          //  iconboxPicture1 = new IconBoxPicture(this, "Lighthouse");
  
-            iconboxText1 = new IconBoxText(this);
+          //  iconboxText1 = new IconBoxText(this);
 
+            
+           
+            BossPanel = new MainOperatorPanel(this);
 
+            CurrentTask[0] = new Task(this, Task.MediaType.Audio, Task.ManagerStatus.Assigned, Task.ProgressStatus.New, Task.PresentationType.PanelIcon, "Kalimba", 12);
+            CurrentTask[0].LoadContent(this);
 
+            CurrentTask[1] = new Task(this, Task.MediaType.Video, Task.ManagerStatus.NotAssigned, Task.ProgressStatus.New, Task.PresentationType.PanelIcon, "wildlife1", 4);
+            CurrentTask[1].LoadContent(this);
 
+            CurrentTask[2] = new Task(this, Task.MediaType.Picture, Task.ManagerStatus.Finished, Task.ProgressStatus.New, Task.PresentationType.PanelIcon, "Lighthouse", 37);
+            CurrentTask[2].LoadContent(this);
 
+           
         }
 
 
@@ -898,10 +901,17 @@ namespace Microsoft.Samples.Kinect.Avateering
             {
                 CursorRight.Position = new Vector3(scaled_right_hand_position.X, scaled_right_hand_position.Y, focusedObject.Position.Z);
             }  */
+            
+            
+            CursorRightDelta = CursorRight.Position - previousCursorPosition;
+            //Window.Title = CursorRightDelta.ToString();
 
-           
+
             previousCursorPosition = CursorRight.Position;
             previousLeftCursorPosition = CursorLeft.Position;
+
+
+
            // Window.Title = "Ускорение X:  " + Math.Round(cursorVectorDirection.X, 3).ToString() 
            //     + "     Ускорение Y:  " + Math.Round(cursorVectorDirection.Y, 3).ToString() 
            //     + "     Ускорение Z:  " + Math.Round(cursorVectorDirection.Z, 3).ToString();
@@ -939,9 +949,5 @@ namespace Microsoft.Samples.Kinect.Avateering
 
 
                 }
-
-
-
-
     }
 }

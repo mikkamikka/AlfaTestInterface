@@ -195,11 +195,9 @@ namespace Microsoft.Samples.Kinect.Avateering
                     effect.Alpha = 0.5f;
                 }
             }
-
-            DrawBoundingBox();
-
             mesh.Draw();
         }
+        DrawBoundingBox();
     }
 
 

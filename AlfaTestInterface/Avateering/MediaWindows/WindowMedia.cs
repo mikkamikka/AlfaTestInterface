@@ -10,6 +10,7 @@ namespace Microsoft.Samples.Kinect.Avateering
 {
     public class WindowMedia : Environment
     {
+        public string MediaType { get; set; }
 
         private KeyboardState currentKeyboard;
         private KeyboardState previousKeyboard;
@@ -30,14 +31,15 @@ namespace Microsoft.Samples.Kinect.Avateering
         public WindowMedia(Game game)
             : base(game)
         {
-            BoundingBox = new BoundingBox();
-            debugDraw = new DebugDraw(Game.GraphicsDevice);
+            MediaType = null;
         }
 
 
         protected override void LoadContent()
         {
-            base.LoadContent();
+            base.LoadContent();            
+            BoundingBox = new BoundingBox();
+            debugDraw = new DebugDraw(Game.GraphicsDevice);
         }
 
 
@@ -117,35 +119,32 @@ namespace Microsoft.Samples.Kinect.Avateering
 
         }
 
-        public void DrawBoundingBox()
-        {
-            //drawBoundingBoxesOn = true;
-            drawBoundingBoxesOn = AvateeringXNA.drawBoundingBoxesOn;
 
-            if (drawBoundingBoxesOn)
-            {
-                debugDraw.Begin(AvateeringXNA.view, AvateeringXNA.projection);
-                debugDraw.DrawWireBox(BoundingBox, Color.Yellow);
-                debugDraw.End();
-            }
-
-        }
 
         public void DetectDragGesture()
         {
 
                 if (AvateeringXNA.head.Y < AvateeringXNA.left_hand_joint.Y)
                 {
-                    if (OnWindowPicked)
-                    {
-                        DragWindow();
-                    }
+                    //if (Math.Abs(Position.Z - AvateeringXNA.CursorRight.Position.Z) < 0.5f)
+                   // {
+                        if (OnWindowPicked)
+                        {
+                            DragWindow();
+                        }
+                   // }
                 }
         }
  
 
         public void DragWindow()
-        {
+        {   
+            
+            //Position.X += AvateeringXNA.CursorRightDelta.X;
+            //Position.Y += AvateeringXNA.CursorRightDelta.Y;
+            //Position.Z = AvateeringXNA.CursorRight.Position.Z;
+            
+            Vector3 centerOfWindow = AvateeringXNA.CursorLeft.boundingBox.Min + (AvateeringXNA.CursorLeft.boundingBox.Max - AvateeringXNA.CursorLeft.boundingBox.Min) / 2;
             Position = AvateeringXNA.CursorRight.Position;
         }
 
@@ -153,6 +152,8 @@ namespace Microsoft.Samples.Kinect.Avateering
         {
             collideResults3 = BoundingBox.Contains(AvateeringXNA.CursorRight.boundingBox);
             collideResults4 = BoundingBox.Contains(AvateeringXNA.CursorLeft.boundingBox);
+
+            
 
             switch (collideResults3)
             {

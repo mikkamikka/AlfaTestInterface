@@ -207,10 +207,13 @@ namespace Microsoft.Samples.Kinect.Avateering
 
                  }
 
-                 DrawBoundingBox();
+                 
 
                  mesh.Draw();
              }
+
+            DrawBoundingBox();
+
         }
 
 

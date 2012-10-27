@@ -11,7 +11,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace VideoQuad
+namespace Microsoft.Samples.Kinect.Avateering
 {
 
     public struct Quad
